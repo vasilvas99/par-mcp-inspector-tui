@@ -20,23 +20,26 @@ class HttpMCPClient(MCPClient):
     a simple and reliable way to connect to HTTP-based MCP servers.
     """
 
-    def __init__(self, debug: bool = False, roots: list[str] | None = None) -> None:
+    def __init__(self, debug: bool = False, roots: list[str] | None = None, headers: dict[str, str] | None = None) -> None:
         """Initialize HTTP client.
 
         Args:
             debug: Enable debug logging
             roots: List of root paths for filesystem servers (not used for HTTP)
+            headers: Custom HTTP headers to include in all requests
         """
         super().__init__(debug=debug, roots=roots)
         self._transport: StreamableHttpTransport | None = None
         self._client: Client | None = None
         self._endpoint_url: str = ""
+        self._headers: dict[str, str] = headers or {}  # Store custom headers
 
-    async def connect(self, url: str, **kwargs: Any) -> None:
+    async def connect(self, url: str, headers: dict[str, str] | None = None, **kwargs: Any) -> None:
         """Connect to MCP server via HTTP.
 
         Args:
             url: Server endpoint URL (e.g., "https://example.com/mcp")
+            headers: Custom HTTP headers for all requests
             **kwargs: Additional connection parameters
         """
         if self._connected:
@@ -44,8 +47,12 @@ class HttpMCPClient(MCPClient):
 
         self._endpoint_url = url
 
-        # Create StreamableHttp transport
-        self._transport = StreamableHttpTransport(url=url)
+        # Update headers if provided
+        if headers:
+            self._headers.update(headers)
+
+        # Create StreamableHttp transport with custom headers
+        self._transport = StreamableHttpTransport(url=url, headers=self._headers if self._headers else None)
 
         # Create FastMCP client with transport
         self._client = Client(self._transport)
@@ -54,6 +61,8 @@ class HttpMCPClient(MCPClient):
 
         if self._debug:
             logger.debug(f"Connected to HTTP endpoint: {self._endpoint_url}")
+            if self._headers:
+                logger.debug(f"Custom headers: {list(self._headers.keys())}")
 
     async def disconnect(self) -> None:
         """Disconnect from MCP server."""

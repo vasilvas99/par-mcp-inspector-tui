@@ -200,9 +200,10 @@ class MCPService:
                         port=server.port or 3333,
                     )
                 elif server.transport == TransportType.HTTP:
-                    self._client = HttpMCPClient(debug=self._debug, roots=server_roots)
+                    self._client = HttpMCPClient(debug=self._debug, roots=server_roots, headers=server.headers)
                     await self._client.connect(
                         url=server.url or "",
+                        headers=server.headers,
                     )
                 else:
                     raise MCPClientError(f"Unsupported transport: {server.transport}")

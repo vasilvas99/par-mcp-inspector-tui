@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 class ToolParameterProperties(BaseModel):
     """Properties for a tool parameter."""
 
-    type: str
+    type: str | None = None
     description: str | None = None
     enum: list[Any] | None = None
     items: dict[str, Any] | None = None

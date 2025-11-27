@@ -51,6 +51,7 @@ class MCPServer(BaseModel):
     host: str | None = None  # For TCP transport
     port: int | None = None  # For TCP transport
     url: str | None = None  # For HTTP transport
+    headers: dict[str, str] | None = None  # Custom HTTP headers for HTTP transport
     env: dict[str, str] | None = None
     roots: list[str] | None = None  # Filesystem roots for the server
     toast_notifications: bool = True  # Show toast notifications for server notifications
@@ -75,6 +76,7 @@ class MCPServer(BaseModel):
         elif self.transport == TransportType.HTTP:
             return {
                 "url": self.url,
+                "headers": self.headers or {},
             }
         else:
             raise ValueError(f"Unknown transport type: {self.transport}")

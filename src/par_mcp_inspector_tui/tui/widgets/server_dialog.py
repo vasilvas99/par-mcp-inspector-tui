@@ -112,6 +112,13 @@ class ServerConfigDialog(ModalScreen[MCPServer | None]):
                         value=self.server.url or "" if self.server else "",
                     )
 
+                    yield Label("Custom Headers (KEY: value, one per line):")
+                    yield TextArea(
+                        text=self._format_headers(self.server.headers) if self.server and self.server.headers else "",
+                        id="headers",
+                        classes="config-textarea",
+                    )
+
                 # Toast notifications configuration
                 yield Label("Notification Settings:")
                 yield Checkbox(
@@ -210,6 +217,22 @@ class ServerConfigDialog(ModalScreen[MCPServer | None]):
                 key, value = line.split("=", 1)
                 env[key.strip()] = value.strip()
         return env
+
+    def _format_headers(self, headers: dict[str, str] | None) -> str:
+        """Format custom headers for display."""
+        if not headers:
+            return ""
+        return "\n".join(f"{k}: {v}" for k, v in headers.items())
+
+    def _parse_headers(self, headers_text: str) -> dict[str, str]:
+        """Parse custom headers from text format."""
+        headers = {}
+        for line in headers_text.strip().split("\n"):
+            line = line.strip()
+            if ":" in line:
+                key, value = line.split(":", 1)
+                headers[key.strip()] = value.strip()
+        return headers
 
     def _validate_form(self) -> str | None:
         """Validate form data. Returns error message or None if valid."""
@@ -313,7 +336,14 @@ class ServerConfigDialog(ModalScreen[MCPServer | None]):
 
         else:  # HTTP
             url_input = self.query_one("#url", Input)
+            headers_textarea = self.query_one("#headers", TextArea)
+
             server_data["url"] = url_input.value.strip()
+
+            # Parse custom headers
+            headers_text = headers_textarea.text.strip()
+            if headers_text:
+                server_data["headers"] = self._parse_headers(headers_text)
 
         return MCPServer(**server_data)
 
@@ -445,6 +475,12 @@ class ServerConfigDialog(ModalScreen[MCPServer | None]):
             return {"transport": {"type": "tcp", "host": server.host or "localhost", "port": server.port or 3333}}
 
         elif server.transport == TransportType.HTTP:
-            return {"transport": {"type": "http", "url": server.url or ""}}
+            http_config: dict[str, Any] = {"type": "http", "url": server.url or ""}
+
+            # Include custom headers if present
+            if server.headers:
+                http_config["headers"] = server.headers
+
+            return {"transport": http_config}
 
         return {}
