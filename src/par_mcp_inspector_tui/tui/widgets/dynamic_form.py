@@ -1,5 +1,6 @@
 """Dynamic form builder widget."""
 
+import json
 from typing import TYPE_CHECKING, Any
 
 from rich.text import Text
@@ -226,8 +227,18 @@ class DynamicForm(Widget):
                             values[field_name] = float(value)
                     except ValueError:
                         values[field_name] = value
-                elif value:  # Only include non-empty values
-                    values[field_name] = value
+                elif value:
+                    # Try to parse as JSON if it looks like a JSON array or object
+                    # This handles cases where users input JSON directly for list/dict parameters
+                    try:
+                        if value.strip().startswith("[") or value.strip().startswith("{"):
+                            parsed_value = json.loads(value)
+                            values[field_name] = parsed_value
+                        else:
+                            values[field_name] = value
+                    except (json.JSONDecodeError, ValueError):
+                        # If JSON parsing fails, use the value as-is
+                        values[field_name] = value
 
         return values
 
